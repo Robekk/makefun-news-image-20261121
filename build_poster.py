@@ -501,16 +501,36 @@ def draw_map(d, x, y, w, h):
         cx, cy = x + (c + 0.5) * cw, y + (r + 0.5) * ch
         d.ellipse([cx - 3.4, cy - 3.4, cx + 3.4, cy + 3.4], fill=land)
     fn = F(SANS_B, 17)
-    placed = []
+    # Every pin gets a small dot at its EXACT lon/lat position. Badges sit
+    # on their dot unless they would collide or clip the panel; those are
+    # offset and tied to their dot with a thin leader line:
+    #   6 Beijing / 8 Dandong share one spot in NE China -- split apart.
+    #   9 Brussels hides behind 10 Copenhagen -- 9 down-left, 10 above.
+    #   7 Wellington's dot is at the panel's right edge -- badge pulled in.
+    OFFSETS = {
+        "6": (-26, -24),
+        "8": (28, 26),
+        "9": (-40, 30),
+        "10": (6, -30),
+        "7": (-30, 0),
+    }
+    pts = {}
     for num, lon, lat in PINS:
         px = x + (lon + 180) / 360 * w
         py = y + (90 - lat) / 180 * h
+        pts[num] = (px, py)
+    for num, (dx, dy) in OFFSETS.items():
+        px, py = pts[num]
+        d.line([px, py, px + dx, py + dy], fill=RED, width=2)
+    for num, (px, py) in pts.items():
+        d.ellipse([px - 4, py - 4, px + 4, py + 4], fill=RED)
+    for num, (px, py) in pts.items():
+        dx, dy = OFFSETS.get(num, (0, 0))
+        bx, by = px + dx, py + dy
         r = 15 if len(num) == 1 else 17
-        d.ellipse([px - r, py - r, px + r, py + r], fill=RED, outline=WHITE, width=2)
-        placed.append((num, px, py))
-    for num, px, py in placed:
+        d.ellipse([bx - r, by - r, bx + r, by + r], fill=RED, outline=WHITE, width=2)
         tw = d.textlength(num, font=fn)
-        d.text((px - tw / 2, py - 11), num, font=fn, fill=WHITE)
+        d.text((bx - tw / 2, by - 11), num, font=fn, fill=WHITE)
 
 
 def draw_bottom(d, y):
